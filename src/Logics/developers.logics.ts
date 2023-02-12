@@ -37,7 +37,17 @@ export const createDev = async (
   } catch (error: any) {
     if (error.message.includes("developers_email_key")) {
       return res.status(400).json({
-        message: "Email already exists.",
+        message: "Email already exists",
+      });
+    }
+    if (error.message.includes("does not exist")) {
+      return res.status(400).json({
+        message: "The correct keys are: name and email",
+      });
+    }
+    if (error instanceof Error) {
+      return res.status(409).json({
+        message: error.message,
       });
     }
     console.log(error.message);
@@ -88,12 +98,12 @@ export const createDevInfo = async (
   } catch (error: any) {
     if (error.message.includes("invalid input")) {
       return res.status(400).json({
-        message: "developerSince,preferredOS.",
+        message: "invalid data",
       });
     }
     if (error.message.includes("does not exist")) {
       return res.status(400).json({
-        message: "essa chave deve ser ignorada",
+        message: "The correct keys are: developerSince and preferredOS",
       });
     }
     console.log(error.message);
@@ -158,13 +168,13 @@ export const updateDevInfo = async (
       message: "Erro updating id!",
     });
   }
+  try {
+    const id: number = parseInt(request.params.id);
+    const projectData = Object.values(request.body);
+    const listKeys = Object.keys(request.body);
 
-  const id: number = parseInt(request.params.id);
-  const projectData = Object.values(request.body);
-  const listKeys = Object.keys(request.body);
-
-  const queryString: string = format(
-    `
+    const queryString: string = format(
+      `
         UPDATE
         developer_infos
         SET(%I) = ROW(%L)  
@@ -172,17 +182,35 @@ export const updateDevInfo = async (
             id = $1
         RETURNING *;      
     `,
-    listKeys,
-    projectData
-  );
+      listKeys,
+      projectData
+    );
 
-  const queryConfig: QueryConfig = {
-    text: queryString,
-    values: [id],
-  };
+    const queryConfig: QueryConfig = {
+      text: queryString,
+      values: [id],
+    };
 
-  const queryResult: devAndInformationResult = await client.query(queryConfig);
-  return response.json(queryResult.rows[0]);
+    const queryResult: devAndInformationResult = await client.query(
+      queryConfig
+    );
+    return response.json(queryResult.rows[0]);
+  } catch (error: any) {
+    if (error.message.includes("invalid input")) {
+      return response.status(400).json({
+        message: "invalid data",
+      });
+    }
+    if (error.message.includes("does not exist")) {
+      return response.status(400).json({
+        message: "The correct keys are: developerSince and preferredOS",
+      });
+    }
+    console.log(error.message);
+    return response.status(500).json({
+      message: "Internal server error",
+    });
+  }
 };
 
 export const updateDev = async (
@@ -194,13 +222,13 @@ export const updateDev = async (
       message: "Erro updating id!",
     });
   }
+  try {
+    const id: number = parseInt(request.params.id);
+    const projectData = Object.values(request.body);
+    const listKeys = Object.keys(request.body);
 
-  const id: number = parseInt(request.params.id);
-  const projectData = Object.values(request.body);
-  const listKeys = Object.keys(request.body);
-
-  const queryString: string = format(
-    `
+    const queryString: string = format(
+      `
         UPDATE
             developers
         SET(%I) = ROW(%L)  
@@ -208,17 +236,40 @@ export const updateDev = async (
             id = $1
         RETURNING *;      
     `,
-    listKeys,
-    projectData
-  );
+      listKeys,
+      projectData
+    );
 
-  const queryConfig: QueryConfig = {
-    text: queryString,
-    values: [id],
-  };
+    const queryConfig: QueryConfig = {
+      text: queryString,
+      values: [id],
+    };
 
-  const queryResult: devAndInformationResult = await client.query(queryConfig);
-  return response.json(queryResult.rows[1]);
+    const queryResult: devAndInformationResult = await client.query(
+      queryConfig
+    );
+    return response.json(queryResult.rows[0]);
+  } catch (error: any) {
+    if (error.message.includes("developers_email_key")) {
+      return response.status(400).json({
+        message: "Email already exists",
+      });
+    }
+    if (error.message.includes("does not exist")) {
+      return response.status(400).json({
+        message: "The correct keys are: name and email",
+      });
+    }
+    if (error instanceof Error) {
+      return response.status(409).json({
+        message: error.message,
+      });
+    }
+    console.log(error.message);
+    return response.status(500).json({
+      message: "Internal server error",
+    });
+  }
 };
 
 export const deleteDevById = async (

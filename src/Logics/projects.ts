@@ -198,9 +198,9 @@ export const createProjectsTech = async (
     );
     return res.status(201).json(queryResult.rows[0]);
   } catch (error: any) {
-    if (error.message.includes("violates foreign key")) {
-      return res.status(404).json({
-        message: "Not found",
+    if (error.message.includes("is not present")) {
+      return res.status(400).json({
+        message: "Not found ",
       });
     }
     console.log(error);
