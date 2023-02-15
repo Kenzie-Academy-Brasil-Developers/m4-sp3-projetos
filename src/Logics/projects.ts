@@ -1,14 +1,12 @@
-import { Request, Response } from "express";
+import { Request, response, Response } from "express";
 import { QueryConfig } from "pg";
 import format from "pg-format";
 import { client } from "../Database";
 import {
   IProjectsRquest,
-  IProjectsTech,
-  ITechnologiesRequest,
+  Itech,
   projectsDevResults,
   projectsResults,
-  ProjectsTechResults,
 } from "../Interfaces/projects.interfaces";
 
 export const createProjects = async (
@@ -16,26 +14,61 @@ export const createProjects = async (
   res: Response
 ): Promise<Response> => {
   try {
-    const projectsData: IProjectsRquest = req.body;
+    const {
+      name,
+      description,
+      estimatedTime,
+      repository,
+      startDate,
+      idDeveloper,
+    }: IProjectsRquest = req.body;
 
     const queryString: string = format(
-      `
-          INSERT INTO
+      ` INSERT INTO
                   projects(%I)
           VALUES (%L)
           RETURNING *;
           `,
-      Object.keys(projectsData),
-      Object.values(projectsData)
+      Object.keys({
+        name,
+        description,
+        estimatedTime,
+        repository,
+        startDate,
+        idDeveloper,
+      }),
+      Object.values({
+        name,
+        description,
+        estimatedTime,
+        repository,
+        startDate,
+        idDeveloper,
+      })
     );
     const queryResult: projectsResults = await client.query(queryString);
 
     return res.status(201).json(queryResult.rows[0]);
   } catch (error: any) {
-    if (error.message.includes("does not exist")) {
+    if (error.message.includes("null value in column")) {
       return res.status(400).json({
         message:
-          "Missing required keys: description,estimatedTime,repository,startDate.",
+          "Missing required keys name,description,estimatedTime,repository,startDate",
+      });
+    }
+    if (error.message.includes("projects_idDeveloper_fkey")) {
+      return res.status(404).json({
+        message: "Developer not found",
+      });
+    }
+    if (error.message.includes("invalid input")) {
+      return res.status(404).json({
+        message: "Invalid data",
+      });
+    }
+    if (error instanceof Error) {
+      return res.status(409).json({
+        message: error.message,
       });
     }
     console.log(error.message);
@@ -50,14 +83,15 @@ export const listProjects = async (
   res: Response
 ): Promise<Response> => {
   const queryString = `
-            SELECT
-                pro.*             
-            FROM
-              projects pro
-            LEFT JOIN
-            developers de ON pro."idDeveloper" = de."id"
-         
-        `;
+
+  SELECT *
+  FROM
+    projects_technologies 
+  LEFT JOIN 
+    technologies ON projects_technologies."idTechnologies" = technologies.id 
+  RIGHT JOIN
+    projects ON projects_technologies ."idProjects" = projects.id;
+  `;
 
   const queryResult: projectsDevResults = await client.query(queryString);
 
@@ -122,7 +156,7 @@ export const updatePartial = async (
   };
 
   const queryResult: projectsDevResults = await client.query(queryConfig);
-  return response.json(queryResult.rows[1]);
+  return response.json(queryResult.rows[0]);
 };
 
 export const deleteProjectById = async (
@@ -149,63 +183,69 @@ export const deleteProjectById = async (
 };
 
 export const createProjectsTech = async (
-  req: Request,
-  res: Response
+  request: Request,
+  response: Response
 ): Promise<Response> => {
   try {
-    const projectsId: number = parseInt(req.params.id);
-    const projectsData: ITechnologiesRequest = req.body;
-    const projectsaddedIn: IProjectsTech = req.body.addedIn;
+    const projectId: number = parseInt(request.params.id);
+    const techData: Itech = request.body;
+    const projectData: Date = new Date();
+
+    let querySearchTechId: string = `
+          SELECT
+             *
+          FROM
+              technologies
+          WHERE
+              tech = $1;
+      `;
+
+    const querySearchTechIdConfig: QueryConfig = {
+      text: querySearchTechId,
+      values: [techData.tech],
+    };
+
+    const queryTechResult = await client.query(querySearchTechIdConfig);
 
     let queryString: string = `
-         SELECT
-              *
-         FROM
-             technologies
-         WHERE
-          name = $1;
+      INSERT INTO
+          projects_technologies (
+              "addedIn",
+              "idTechnologies",
+              "idProjects"
+          )
+      VALUES ($1, $2, $3)
+      RETURNING *;
+  `;
 
-     `;
-
-    let queryConfig: QueryConfig = {
+    const queryConfig: QueryConfig = {
       text: queryString,
-      values: [projectsData.name],
+      values: [projectData, queryTechResult.rows[0].id, projectId],
     };
 
-    const queryResult = await client.query(queryConfig);
+    let queryResult = await client.query(queryConfig);
 
-    if (queryResult.rowCount === 0) {
-      return res.status(404).json({
-        message: "Technology not found!",
-      });
-    }
-
-    queryString = `
-        INSERT INTO
-        projects_technologies ("idProjects","idTechnologies","addedIn")
-       
-        VALUES ($1, $2,$3)
-        RETURNING *;
-
-        `;
-    queryConfig = {
-      text: queryString,
-      values: [projectsId, queryResult.rows[0].id, projectsaddedIn],
-    };
-
-    const queryResultTech: ProjectsTechResults = await client.query(
-      queryConfig
-    );
-    return res.status(201).json(queryResult.rows[0]);
+    return response.status(201).json(queryTechResult.rows[0]);
   } catch (error: any) {
-    if (error.message.includes("is not present")) {
-      return res.status(400).json({
-        message: "Not found ",
+    if (error.message.includes("Cannot read properties of undefined")) {
+      return response.status(404).json({
+        message: "Technology not found",
+        options: [
+          "JavaScript",
+          "Python",
+          "React",
+          "Express.js",
+          "HTML",
+          "CSS",
+          "Django",
+          "PostgreSQL",
+          "MongoDB",
+        ],
       });
     }
-    console.log(error);
-    return res.status(500).json({
-      message: "Internal server error",
+    console.error(error.message);
+    return response.status(500).json({
+      message: "Internal Server Error",
     });
   }
 };
@@ -222,7 +262,7 @@ export const deleteTech = async (
       FROM
         projects_technologies
       WHERE
-          "idProjects" = $1 AND "idTechnologies" = (SELECT id FROM technologies WHERE name = $2);
+          "idProjects" = $1 AND "idTechnologies" = (SELECT id FROM technologies WHERE tech = $2);
           
   `;
 

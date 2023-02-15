@@ -23,16 +23,11 @@ export interface IProjectsDevelopers extends IProjects {
 export type projectsDevResults = QueryResult<IProjectsDevelopers>;
 
 export interface ITechnologiesRequest {
-  name:
-    | "JavaScript"
-    | "Python"
-    | "React"
-    | "Express.js"
-    | "HTML"
-    | "CSS"
-    | "Django"
-    | "PostgreSQL"
-    | "MongoDB";
+  tech: string;
+}
+
+export interface Itech extends ITechnologiesRequest {
+  id: number;
 }
 
 export interface IProjectsTech {

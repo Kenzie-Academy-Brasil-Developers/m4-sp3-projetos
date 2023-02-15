@@ -28,3 +28,34 @@ export const ensureDevExists = async (
     message: "Developer not found.",
   });
 };
+export const ensureDevUpdateInfo = (
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Response | void => {
+  const keysBody: Array<string> = Object.keys(request.body);
+  const requiredData: Array<string> = ["developerSince", "preferredOS"];
+  keysBody.map((elem) => {
+    if (!requiredData.includes(elem)) {
+      delete request.body[elem];
+    }
+  });
+
+  return next();
+};
+
+export const ensureDevUpdate = (
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Response | void => {
+  const keysBody: Array<string> = Object.keys(request.body);
+  const requiredData: Array<string> = ["name", "email"];
+  keysBody.map((elem) => {
+    if (!requiredData.includes(elem)) {
+      delete request.body[elem];
+    }
+  });
+
+  return next();
+};

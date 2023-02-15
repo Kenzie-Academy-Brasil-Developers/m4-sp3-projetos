@@ -1,3 +1,7 @@
+
+CREATE TYPE preferredOS AS ENUM ('Windows', 'MacOs', 'Linux');
+
+
 CREATE TABLE IF NOT EXISTS developers (
 "id" SERIAL PRIMARY KEY,
 "name" VARCHAR (50) NOT NULL,
@@ -14,8 +18,6 @@ CREATE TABLE IF NOT EXISTS developer_infos(
 );
 
 
-CREATE TYPE preferredOS AS ENUM ('Windows', 'MacOs', 'Linux');
-
 CREATE TABLE IF NOT EXISTS projects (
 "id" SERIAL PRIMARY KEY,
 "name" VARCHAR (50) NOT NULL,
@@ -26,18 +28,9 @@ CREATE TABLE IF NOT EXISTS projects (
 "endDate" DATE
 );
 
-ALTER TABLE
-		projects 
-ADD COLUMN 
-		"idDeveloper" INTEGER NOT NULL;
-	
-ALTER TABLE 
-		projects 
-ADD FOREIGN KEY ("idDeveloper") REFERENCES developers("id") ON DELETE SET NULL;
-
 CREATE TABLE IF NOT EXISTS technologies(
 "id" SERIAL PRIMARY KEY,
-"name" VARCHAR (30) NOT NULL
+"tech" VARCHAR (30) NOT NULL
 
 );
 
@@ -46,29 +39,14 @@ technologies(name)
 VALUES ('JavaScript'),('Python'),('React'),('Express.js'),('HTML'),('CSS'),('Django'),('PostgreSQL'),('MongoDB')
 RETURNING*;
 
+
 CREATE TABLE IF NOT EXISTS projects_technologies (
 "id" SERIAL PRIMARY KEY,
-"addedIn" DATE NOT NULL
+"addedIn" DATE NOT NULL,
+"idProjects" INTEGER NOT NULL,
+FOREIGN KEY ("idProjects") REFERENCES projects("id")ON DELETE CASCADE,
+"idTechnologies" INTEGER NOT NULL ,
+FOREIGN KEY ("idTechnologies") REFERENCES technologies("id") ON DELETE CASCADE
+
 );
 
-ALTER TABLE
-		projects_technologies
-ADD COLUMN 
-		"idProjects" INTEGER NOT NULL;
-	
-ALTER TABLE 
-		projects_technologies 
-ADD FOREIGN KEY ("idProjects") REFERENCES projects ("id");
-
-
-ALTER TABLE
-		projects_technologies
-ADD COLUMN 
-		"idTechnologies" INTEGER NOT NULL;
-	
-ALTER TABLE 
-		projects_technologies 
-ADD FOREIGN KEY ("idTechnologies") REFERENCES technologies ("id");
-
-
-DROP TABLE projects_technologies;

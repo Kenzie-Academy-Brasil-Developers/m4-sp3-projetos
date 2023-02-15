@@ -16,10 +16,8 @@ export const createDev = async (
   res: Response
 ): Promise<Response> => {
   try {
-    const devData: IDevelope = req.body;
+    const { name, email }: IDevelope = req.body;
 
-    if (!devData.name) {
-    }
     const queryString: string = format(
       `
         INSERT INTO
@@ -27,9 +25,9 @@ export const createDev = async (
         VALUES (%L)
         RETURNING *;
         `,
-      Object.keys(devData),
+      Object.keys({ name, email }),
 
-      Object.values(devData)
+      Object.values({ name, email })
     );
     const queryResult: devResult = await client.query(queryString);
 
@@ -40,7 +38,7 @@ export const createDev = async (
         message: "Email already exists",
       });
     }
-    if (error.message.includes("does not exist")) {
+    if (error.message.includes("null value in column")) {
       return res.status(400).json({
         message: "The correct keys are: name and email",
       });
@@ -63,7 +61,7 @@ export const createDevInfo = async (
 ): Promise<Response> => {
   try {
     const devId: number = parseInt(req.params.id);
-    const devInfoData: IDevInfoRequest = req.body;
+    const { developerSince, preferredOS }: IDevInfoRequest = req.body;
 
     let queryString: string = format(
       `
@@ -72,8 +70,8 @@ export const createDevInfo = async (
         VALUES  (%L)
         RETURNING*;
     `,
-      Object.keys(devInfoData),
-      Object.values(devInfoData)
+      Object.keys({ developerSince, preferredOS }),
+      Object.values({ developerSince, preferredOS })
     );
     let queryResult: devInfoResult = await client.query(queryString);
 
@@ -92,7 +90,7 @@ export const createDevInfo = async (
       values: [queryResult.rows[0].id, devId],
     };
 
-    queryResult = await client.query(queryConfig);
+    await client.query(queryConfig);
 
     return res.status(201).json(queryResult.rows[0]);
   } catch (error: any) {
@@ -101,7 +99,12 @@ export const createDevInfo = async (
         message: "invalid data",
       });
     }
-    if (error.message.includes("does not exist")) {
+    if (error instanceof Error) {
+      return res.status(409).json({
+        message: error.message,
+      });
+    }
+    if (error.message.includes("null value in column ")) {
       return res.status(400).json({
         message: "The correct keys are: developerSince and preferredOS",
       });
@@ -160,113 +163,89 @@ export const retrieveAllDevs = async (
 };
 
 export const updateDevInfo = async (
-  request: Request,
-  response: Response
+  req: Request,
+  res: Response
 ): Promise<Response> => {
-  if (request.body.id) {
-    return response.status(400).json({
-      message: "Erro updating id!",
-    });
-  }
   try {
-    const id: number = parseInt(request.params.id);
-    const projectData = Object.values(request.body);
-    const listKeys = Object.keys(request.body);
-
+    const bobyData = req.body;
+    const id: number = +req.params.id;
     const queryString: string = format(
       `
-        UPDATE
-        developer_infos
-        SET(%I) = ROW(%L)  
-        WHERE 
-            id = $1
-        RETURNING *;      
+    UPDATE
+      developer_infos
+    SET(%I) = ROW(%L)
+    WHERE
+      id = $1
+    RETURNING *;
     `,
-      listKeys,
-      projectData
+      Object.keys(bobyData),
+      Object.values(bobyData)
     );
-
     const queryConfig: QueryConfig = {
       text: queryString,
       values: [id],
     };
-
     const queryResult: devAndInformationResult = await client.query(
       queryConfig
     );
-    return response.json(queryResult.rows[0]);
+    return res.status(200).json(queryResult.rows[0]);
   } catch (error: any) {
     if (error.message.includes("invalid input")) {
-      return response.status(400).json({
+      return res.status(400).json({
         message: "invalid data",
       });
     }
-    if (error.message.includes("does not exist")) {
-      return response.status(400).json({
-        message: "The correct keys are: developerSince and preferredOS",
+    if (error instanceof Error) {
+      return res.status(409).json({
+        message: error.message,
       });
     }
-    console.log(error.message);
-    return response.status(500).json({
+    return res.status(500).json({
       message: "Internal server error",
     });
   }
 };
 
 export const updateDev = async (
-  request: Request,
-  response: Response
+  req: Request,
+  res: Response
 ): Promise<Response> => {
-  if (request.body.id) {
-    return response.status(400).json({
-      message: "Erro updating id!",
-    });
-  }
   try {
-    const id: number = parseInt(request.params.id);
-    const projectData = Object.values(request.body);
-    const listKeys = Object.keys(request.body);
-
+    const bodyData = req.body;
+    const id: number = +req.params.id;
     const queryString: string = format(
       `
-        UPDATE
-            developers
-        SET(%I) = ROW(%L)  
-        WHERE 
-            id = $1
-        RETURNING *;      
+    UPDATE
+      developers
+    SET(%I) = ROW(%L)
+    WHERE
+      id = $1
+    RETURNING *;
     `,
-      listKeys,
-      projectData
+      Object.keys(bodyData),
+      Object.values(bodyData)
     );
-
     const queryConfig: QueryConfig = {
       text: queryString,
       values: [id],
     };
-
     const queryResult: devAndInformationResult = await client.query(
       queryConfig
     );
-    return response.json(queryResult.rows[0]);
+    return res.status(200).json(queryResult.rows[0]);
   } catch (error: any) {
     if (error.message.includes("developers_email_key")) {
-      return response.status(400).json({
+      return res.status(400).json({
         message: "Email already exists",
       });
     }
-    if (error.message.includes("does not exist")) {
-      return response.status(400).json({
-        message: "The correct keys are: name and email",
-      });
-    }
+
     if (error instanceof Error) {
-      return response.status(409).json({
+      return res.status(409).json({
         message: error.message,
       });
     }
-    console.log(error.message);
-    return response.status(500).json({
+    return res.status(500).json({
       message: "Internal server error",
     });
   }
@@ -298,4 +277,42 @@ export const deleteDevById = async (
     console.log(error);
     return response.json(error);
   }
+};
+
+export const listProjectsAndDev = async (
+  request: Request,
+  response: Response
+): Promise<Response> => {
+  const id: number = parseInt(request.params.id);
+
+  const queryString = `
+        SELECT
+        developers.*,
+            developer_infos ."developerSince",
+            developer_infos ."preferredOS",
+            projects.*
+        FROM
+        developers
+        LEFT JOIN 
+            developer_infos ON developers."devInfoId" = developer_infos.id
+        RIGHT JOIN
+          projects  ON projects."idDeveloper" = developers.id
+        WHERE 
+            developers.id = $1;
+    `;
+
+  const queryConfig: QueryConfig = {
+    text: queryString,
+    values: [id],
+  };
+
+  const queryResult: devResult = await client.query(queryConfig);
+
+  if (!queryResult.rows[0]) {
+    return response.status(404).json({
+      message: "Developer not found!",
+    });
+  }
+
+  return response.json(queryResult.rows[0]);
 };

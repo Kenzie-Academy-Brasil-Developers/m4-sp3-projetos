@@ -28,3 +28,25 @@ export const ensureProjectsExists = async (
     message: "project not found.",
   });
 };
+
+export const ensureUpdateProject = (
+  request: Request,
+  response: Response,
+  next: NextFunction
+): Response | void => {
+  const bodyData: Array<string> = Object.keys(request.body);
+  const requiredData: Array<string> = [
+    "name",
+    "description",
+    "estimatedTime",
+    "repository",
+    "startDate",
+    "developerId",
+  ];
+  bodyData.map((element) => {
+    if (!requiredData.includes(element)) {
+      delete request.body[element];
+    }
+  });
+  return next();
+};
