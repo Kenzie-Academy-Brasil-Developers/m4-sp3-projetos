@@ -94,9 +94,17 @@ export const createDevInfo = async (
 
     return res.status(201).json(queryResult.rows[0]);
   } catch (error: any) {
-    if (error.message.includes("invalid input")) {
+    if (error.message.includes("violates not-null constraint")) {
       return res.status(400).json({
-        message: "invalid data",
+        message: error.message,
+        options: ["developerSince", "preferredOS"],
+      });
+    }
+
+    if (error.message.includes("invalid input value for enum")) {
+      return res.status(400).json({
+        message: error.message,
+        options: ["Windows", "Linux", "MacOS"],
       });
     }
     if (error instanceof Error) {
@@ -190,9 +198,10 @@ export const updateDevInfo = async (
     );
     return res.status(200).json(queryResult.rows[0]);
   } catch (error: any) {
-    if (error.message.includes("invalid input")) {
+    if (error.message.includes("invalid input value for enum")) {
       return res.status(400).json({
-        message: "invalid data",
+        message: error.message,
+        options: ["Windows", "Linux", "MacOS"],
       });
     }
     if (error instanceof Error) {
@@ -237,6 +246,12 @@ export const updateDev = async (
     if (error.message.includes("developers_email_key")) {
       return res.status(400).json({
         message: "Email already exists",
+      });
+    }
+    if (error.message.includes("error at or near ")) {
+      return res.status(400).json({
+        message: error.message,
+        options: ["name", "email"],
       });
     }
 

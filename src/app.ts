@@ -42,7 +42,7 @@ app.patch(
 app.patch("/developers/:id", ensureDevUpdate, ensureDevExists, updateDev);
 app.get("/developers/:id", ensureDevExists, retrieveDevs);
 app.get("/developers", retrieveAllDevs);
-app.get("/developers/:id/projects", listProjectsAndDev);
+app.get("/developers/:id/projects", ensureDevExists, listProjectsAndDev);
 app.delete("/developers/:id", ensureDevExists, deleteDevById);
 
 app.post("/projects", createProjects);

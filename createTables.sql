@@ -2,14 +2,6 @@
 CREATE TYPE preferredOS AS ENUM ('Windows', 'MacOs', 'Linux');
 
 
-CREATE TABLE IF NOT EXISTS developers (
-"id" SERIAL PRIMARY KEY,
-"name" VARCHAR (50) NOT NULL,
-"email" VARCHAR (50) NOT NULL UNIQUE,
-"devInfoId" INTEGER UNIQUE,
-FOREIGN KEY ("devInfoId") REFERENCES developer_infos("id") ON DELETE CASCADE 
-);
-
 
 CREATE TABLE IF NOT EXISTS developer_infos(
 "id" SERIAL PRIMARY KEY,
@@ -17,6 +9,14 @@ CREATE TABLE IF NOT EXISTS developer_infos(
 "preferredOS" preferredOS NOT NULL
 );
 
+
+CREATE TABLE IF NOT EXISTS developers (
+"id" SERIAL PRIMARY KEY,
+"name" VARCHAR (50) NOT NULL,
+"email" VARCHAR (50) NOT NULL UNIQUE,
+"devInfoId" INTEGER UNIQUE,
+FOREIGN KEY ("devInfoId") REFERENCES developer_infos("id") ON DELETE CASCADE 
+);
 
 CREATE TABLE IF NOT EXISTS projects (
 "id" SERIAL PRIMARY KEY,
@@ -28,6 +28,15 @@ CREATE TABLE IF NOT EXISTS projects (
 "endDate" DATE
 );
 
+ALTER TABLE
+		projects 
+ADD COLUMN 
+		"idDeveloper" INTEGER NOT NULL;
+	
+ALTER TABLE 
+		projects 
+ADD FOREIGN KEY ("idDeveloper") REFERENCES developers("id") ON DELETE CASCADE;
+
 CREATE TABLE IF NOT EXISTS technologies(
 "id" SERIAL PRIMARY KEY,
 "tech" VARCHAR (30) NOT NULL
@@ -35,7 +44,7 @@ CREATE TABLE IF NOT EXISTS technologies(
 );
 
 INSERT INTO 
-technologies(name)
+technologies(tech)
 VALUES ('JavaScript'),('Python'),('React'),('Express.js'),('HTML'),('CSS'),('Django'),('PostgreSQL'),('MongoDB')
 RETURNING*;
 

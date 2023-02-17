@@ -1,4 +1,4 @@
-import { Request, response, Response } from "express";
+import { Request, Response } from "express";
 import { QueryConfig } from "pg";
 import format from "pg-format";
 import { client } from "../Database";
@@ -61,11 +61,7 @@ export const createProjects = async (
         message: "Developer not found",
       });
     }
-    if (error.message.includes("invalid input")) {
-      return res.status(404).json({
-        message: "Invalid data",
-      });
-    }
+
     if (error instanceof Error) {
       return res.status(409).json({
         message: error.message,
@@ -227,6 +223,11 @@ export const createProjectsTech = async (
 
     return response.status(201).json(queryTechResult.rows[0]);
   } catch (error: any) {
+    if (error instanceof Error) {
+      return response.status(409).json({
+        message: error.message,
+      });
+    }
     if (error.message.includes("Cannot read properties of undefined")) {
       return response.status(404).json({
         message: "Technology not found",
